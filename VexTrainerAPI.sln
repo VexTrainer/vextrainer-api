@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11520.95 d18.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VexTrainerAPI", "VexTrainerAPI.csproj", "{8C5E7D9A-1234-5678-90AB-CDEF12345678}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VexTrainer.Data", "..\VexTrainer.Data\VexTrainer.Data.csproj", "{C683E61E-87D6-4A8C-ABA3-A74EE4F8A188}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VexTrainerWeb", "..\VexTrainerWeb\VexTrainerWeb.csproj", "{8896B609-78AB-4A35-926A-2F7B38A842E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8C5E7D9A-1234-5678-90AB-CDEF12345678}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C5E7D9A-1234-5678-90AB-CDEF12345678}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C5E7D9A-1234-5678-90AB-CDEF12345678}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C5E7D9A-1234-5678-90AB-CDEF12345678}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C683E61E-87D6-4A8C-ABA3-A74EE4F8A188}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C683E61E-87D6-4A8C-ABA3-A74EE4F8A188}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C683E61E-87D6-4A8C-ABA3-A74EE4F8A188}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C683E61E-87D6-4A8C-ABA3-A74EE4F8A188}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8896B609-78AB-4A35-926A-2F7B38A842E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8896B609-78AB-4A35-926A-2F7B38A842E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8896B609-78AB-4A35-926A-2F7B38A842E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8896B609-78AB-4A35-926A-2F7B38A842E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {059C45C2-FECA-4FD7-A25A-D990B0CF9FCC}
+	EndGlobalSection
+EndGlobal
