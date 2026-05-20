@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-
+using Microsoft.Extensions.Logging;
 namespace VexTrainerAPI.Services;
 
 /// <summary>
@@ -30,10 +30,11 @@ namespace VexTrainerAPI.Services;
 /// </summary>
 public class ConfirmationTokenService {
   private readonly byte[] _key;
+  private readonly ILogger<ConfirmationTokenService> _logger;
 
-  public ConfirmationTokenService(IConfiguration configuration) {
-    // Key derivation matches the web project's derivation so tokens issued
-    // by the API can be validated by the web app and vice versa.
+  public ConfirmationTokenService(IConfiguration configuration,
+      ILogger<ConfirmationTokenService> logger) {
+    _logger = logger;
     // SHA-256 produces 32 bytes, which is exactly the AES-256 key length.
     var secret = configuration.GetConnectionString("DefaultConnection")
               ?? configuration["Jwt:Secret"]
@@ -88,22 +89,34 @@ public class ConfirmationTokenService {
     try {
       var data = Decrypt(token);
       var parts = data.Split('|');
-      if (parts.Length != 3) return (false, string.Empty, string.Empty);
+      if (parts.Length != 3) {
+        _logger.LogWarning("Token validation failed: bad format ({Count} parts)", parts.Length);
+        return (false, string.Empty, string.Empty);
+      }
 
       var email = parts[0];
       var purpose = parts[1];
       var expiration = DateTime.Parse(parts[2]);
 
-      if (DateTime.UtcNow > expiration) return (false, string.Empty, string.Empty);
+      if (DateTime.UtcNow > expiration) {
+        _logger.LogWarning(
+            "Token validation failed: expired at {Expiration} UTC, now {Now} UTC (email {Email}, purpose {Purpose})",
+            expiration, DateTime.UtcNow, email, purpose);
+        return (false, string.Empty, string.Empty);
+      }
 
+      _logger.LogInformation(
+          "Token validated successfully (email {Email}, purpose {Purpose})", email, purpose);
       return (true, email, purpose);
     }
-    catch {
-      // Any error — tampered ciphertext, bad padding, wrong key — is treated
-      // as invalid. No error details are surfaced to the caller.
+    catch (Exception ex) {
+      _logger.LogWarning(ex,
+          "Token validation failed: decrypt error. Token prefix: {Prefix}",
+          token.Length > 12 ? token[..12] : token);
       return (false, string.Empty, string.Empty);
     }
   }
+
 
   // ── AES Helpers ───────────────────────────────────────────────────────────
 
