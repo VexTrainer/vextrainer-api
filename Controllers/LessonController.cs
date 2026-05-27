@@ -27,6 +27,7 @@ namespace VexTrainerAPI.Controllers;
 ///   POST /Lesson/lessons/{lessonId}/mark-read       — record lesson as read
 ///   POST /Lesson/topics/{topicId}/mark-read         — record topic as read
 ///   GET  /Lesson/progress                           — user reading dashboard
+///   GET  /Lesson/app-dashboard                      — mobile app home dashboard
 /// </summary>
 [Authorize]
 [ApiController]
@@ -153,6 +154,23 @@ public class LessonController : ControllerBase {
   [HttpGet("progress")]
   public async Task<IActionResult> GetReadingProgress() {
     var result = await _lessonService.GetReadingProgressAsync(GetUserId());
+    return Ok(result);
+  }
+
+  /// <summary>
+  /// Returns the mobile-app home dashboard for the authenticated user:
+  /// overall stats (with reading streak) and the continue-learning list.
+  /// A trimmed counterpart to the web dashboard — backed by
+  /// sp_GetUserAppDashboard, which emits only the first two result sets.
+  /// Always returns a valid payload (empty stats / empty list) for brand-new
+  /// users with no activity, so the app can bind without null checks.
+  ///
+  /// GET /Lesson/app-dashboard
+  /// </summary>
+  [HttpGet("app-dashboard")]
+  [ProducesResponseType(typeof(ApiResponse<UserAppDashboard>), 200)]
+  public async Task<IActionResult> GetAppDashboard() {
+    var result = await _lessonService.GetUserAppDashboardAsync(GetUserId());
     return Ok(result);
   }
 
