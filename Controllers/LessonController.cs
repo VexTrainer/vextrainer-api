@@ -28,6 +28,9 @@ namespace VexTrainerAPI.Controllers;
 ///   POST /Lesson/topics/{topicId}/mark-read         — record topic as read
 ///   GET  /Lesson/progress                           — user reading dashboard
 ///   GET  /Lesson/app-dashboard                      — mobile app home dashboard
+///   GET    /Lesson/bookmarks                          — user's bookmarks
+///   POST   /Lesson/topics/{topicId}/bookmark          — add bookmark
+///   DELETE /Lesson/topics/{topicId}/bookmark          — remove bookmark
 /// </summary>
 [Authorize]
 [ApiController]
@@ -154,6 +157,56 @@ public class LessonController : ControllerBase {
   [HttpGet("progress")]
   public async Task<IActionResult> GetReadingProgress() {
     var result = await _lessonService.GetReadingProgressAsync(GetUserId());
+    return Ok(result);
+  }
+
+  /// <summary>
+  /// Returns the authenticated user's bookmarks, each carrying its full
+  /// Module → Lesson → Topic context so the client can render the list
+  /// without follow-up lookups. Ordered in curriculum sequence by the
+  /// stored procedure — the client must not re-sort.
+  ///
+  /// GET /Lesson/bookmarks
+  /// </summary>
+  [HttpGet("bookmarks")]
+  [ProducesResponseType(typeof(ApiResponse<List<Bookmark>>), 200)]
+  public async Task<IActionResult> GetBookmarks() {
+    var result = await _lessonService.GetBookmarksAsync(GetUserId());
+    return Ok(result);
+  }
+
+  /// <summary>
+  /// Bookmarks a topic for the authenticated user. Idempotent — calling
+  /// this on a topic that is already bookmarked is a silent no-op that
+  /// still returns 200, so the client can treat the bookmark button as
+  /// a simple toggle without first checking server state.
+  ///
+  /// POST /Lesson/topics/{topicId}/bookmark
+  /// </summary>
+  [HttpPost("topics/{topicId}/bookmark")]
+  public async Task<IActionResult> AddBookmark(int topicId) {
+    var result = await _lessonService.AddBookmarkAsync(GetUserId(), topicId);
+
+    if (!result.Success)
+      return BadRequest(result);
+
+    return Ok(result);
+  }
+
+  /// <summary>
+  /// Removes a topic bookmark for the authenticated user. Idempotent —
+  /// deleting a bookmark that does not exist still returns 200, so the
+  /// client can treat the bookmark button as a simple toggle.
+  ///
+  /// DELETE /Lesson/topics/{topicId}/bookmark
+  /// </summary>
+  [HttpDelete("topics/{topicId}/bookmark")]
+  public async Task<IActionResult> DeleteBookmark(int topicId) {
+    var result = await _lessonService.DeleteBookmarkAsync(GetUserId(), topicId);
+
+    if (!result.Success)
+      return BadRequest(result);
+
     return Ok(result);
   }
 
