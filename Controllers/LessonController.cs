@@ -212,11 +212,12 @@ public class LessonController : ControllerBase {
 
   /// <summary>
   /// Returns the mobile-app home dashboard for the authenticated user:
-  /// overall stats (with reading streak) and the continue-learning list.
-  /// A trimmed counterpart to the web dashboard — backed by
-  /// sp_GetUserAppDashboard, which emits only the first two result sets.
-  /// Always returns a valid payload (empty stats / empty list) for brand-new
-  /// users with no activity, so the app can bind without null checks.
+  /// overall stats (with reading streak), the continue-learning list, and
+  /// the user's bookmarks. A trimmed counterpart to the web dashboard —
+  /// backed by sp_GetUserAppDashboard, which emits the first three result
+  /// sets. Always returns a valid payload (empty stats / empty lists) for
+  /// brand-new users with no activity, so the app can bind without null
+  /// checks.
   ///
   /// GET /Lesson/app-dashboard
   /// </summary>
