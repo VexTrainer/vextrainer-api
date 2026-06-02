@@ -28,6 +28,7 @@ namespace VexTrainerAPI.Controllers;
 ///   POST /Lesson/topics/{topicId}/mark-read         — record topic as read
 ///   GET  /Lesson/progress                           — user reading dashboard
 ///   GET  /Lesson/app-dashboard                      — mobile app home dashboard
+///   GET  /Lesson/streak-report                      — streak badge activity report
 ///   GET    /Lesson/bookmarks                          — user's bookmarks
 ///   POST   /Lesson/topics/{topicId}/bookmark          — add bookmark
 ///   DELETE /Lesson/topics/{topicId}/bookmark          — remove bookmark
@@ -225,6 +226,29 @@ public class LessonController : ControllerBase {
   [ProducesResponseType(typeof(ApiResponse<UserAppDashboard>), 200)]
   public async Task<IActionResult> GetAppDashboard() {
     var result = await _lessonService.GetUserAppDashboardAsync(GetUserId());
+    return Ok(result);
+  }
+
+  /// <summary>
+  /// Returns the user's reading and quiz activity for their 7 most recent
+  /// active days (days on which at least one topic was read or quiz was
+  /// attempted). Dates are converted from UTC to the caller's local timezone
+  /// using the supplied offset. Both result sets are assembled into a single
+  /// StreakBadgeReport object — topics grouped by date / module / lesson /
+  /// topic, and quizzes flat by date with an attempt count for the (Nx) label.
+  ///
+  /// Tapping the streak badge on the mobile dashboard navigates here.
+  /// Returns empty lists (not null) when the user has no activity, so the
+  /// client can always bind without null checks.
+  ///
+  /// GET /Lesson/streak-report?timezoneOffsetMinutes=N
+  /// </summary>
+  [HttpGet("streak-report")]
+  [ProducesResponseType(typeof(ApiResponse<StreakBadgeReport>), 200)]
+  public async Task<IActionResult> GetStreakReport(
+      [FromQuery] int timezoneOffsetMinutes = 0) {
+    var result = await _lessonService.GetStreakBadgeReportAsync(
+        GetUserId(), timezoneOffsetMinutes);
     return Ok(result);
   }
 
