@@ -183,6 +183,22 @@ public class QuizController : ControllerBase {
     return Ok(result);
   }
 
+
+  /// <summary>
+  /// Returns a page of N parent categories (modules) with their subcategories
+  /// (lessons). Use <paramref name="offset"/> to page through all modules.
+  /// The response includes <c>hasMore</c> so the client knows when to stop.
+  ///
+  /// GET /Quiz/categories/paged?offset=0&pageSize=10
+  /// </summary>
+  [HttpGet("categories/paged")]
+  public async Task<IActionResult> GetCategoriesPaged(
+      [FromQuery] int offset   = 0,
+      [FromQuery] int pageSize = 10) {
+    var result = await _quizService.GetCategoriesPagedAsync(offset, pageSize);
+    return Ok(result);
+  }
+
   private int GetUserId() {
     var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     return int.Parse(userIdClaim ?? "0");
