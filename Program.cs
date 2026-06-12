@@ -4,6 +4,8 @@ using System.Text;
 using VexTrainer.Data.Services;
 using VexTrainerAPI.Middleware;
 using VexTrainerAPI.Services;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 // =============================================================================
 // VexTrainer API — Application Entry Point and Composition Root
@@ -34,6 +36,11 @@ using VexTrainerAPI.Services;
 // =============================================================================
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===== Kestrel: suppress Server header =====
+// IIS outbound rule in web.config handles the IIS layer.
+// This suppresses the Kestrel-added Server header at the ASP.NET Core layer.
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // Configuration
 // All required values are read up front and fail-fast if missing.
@@ -173,6 +180,36 @@ builder.Services.AddSwaggerGen(options => {
     });
 });
 
+// ===== Rate limiting =====
+// API clients (mobile apps) make more requests per session than browser users.
+// 300/min per IP covers normal app use; bots and scanners are throttled.
+// Auth endpoints get a tighter limit to block credential stuffing.
+builder.Services.AddRateLimiter(options =>
+{
+    // Global: 300 requests per minute per IP
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit          = 300,
+                Window               = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit           = 0
+            }));
+
+    // Auth endpoints: 10 attempts per 10 minutes per IP (blocks credential stuffing)
+    options.AddFixedWindowLimiter("auth", o =>
+    {
+        o.PermitLimit          = 10;
+        o.Window               = TimeSpan.FromMinutes(10);
+        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        o.QueueLimit           = 0;
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 // Build
 var app = builder.Build();
 
@@ -190,11 +227,65 @@ if (app.Environment.IsDevelopment()) {
   app.UseDeveloperExceptionPage();
 }
 else {
-  // Production: generic error handler prevents stack trace leakage;
-  // HSTS forces HTTPS on all future requests from browsers that have visited once.
-  app.UseExceptionHandler("/error");
+  // Production: exception handler logs the error, fires an email notification,
+  // and returns a generic JSON response — no stack trace leakage.
+  app.UseExceptionHandler(errorApp =>
+  {
+      errorApp.Run(async context =>
+      {
+          var feature = context.Features
+              .Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+          if (feature?.Error is not null)
+          {
+              app.Logger.LogError(feature.Error, "Unhandled API exception");
+
+              // Fire-and-forget — email must not delay the error response
+              _ = Task.Run(async () =>
+              {
+                  try
+                  {
+                      await ErrorNotification.SendAsync(
+                          feature.Error, context, app.Configuration, "VexTrainer API");
+                  }
+                  catch (Exception emailEx)
+                  {
+                      app.Logger.LogError(emailEx, "Error notification email failed");
+                  }
+              });
+          }
+
+          // Return the same ApiResponse envelope the clients expect
+          context.Response.StatusCode  = 500;
+          context.Response.ContentType = "application/json";
+          await context.Response.WriteAsJsonAsync(new
+          {
+              success    = false,
+              message    = "An unexpected error occurred",
+              resultCode = 99
+          });
+      });
+  });
   app.UseHsts();
 }
+
+// ===== Security headers middleware =====
+// Belt-and-suspenders with web.config — covers edge cases where the IIS
+// layer is bypassed (e.g. direct Kestrel access during local testing).
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var h = context.Response.Headers;
+        h.Remove("Server");
+        h.Remove("X-Powered-By");
+        h["X-Content-Type-Options"] = "nosniff";
+        h["X-Frame-Options"]        = "DENY";
+        h["Referrer-Policy"]        = "strict-origin-when-cross-origin";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AllowVexTrainer");
@@ -207,6 +298,8 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("EnableR
   app.UseRequestResponseLogging();
   app.Logger.LogWarning("*** Request/Response logging is ENABLED ***");
 }
+
+app.UseRateLimiter();
 
 // Authentication must precede Authorization — auth populates the ClaimsPrincipal
 // that authorization policies and [Authorize] attributes inspect.
