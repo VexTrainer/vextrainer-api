@@ -1,0 +1,41 @@
+# Default: text files normalized to LF in the repo
+* text=auto eol=lf
+
+# Explicit text files
+*.cs       text eol=lf
+*.csproj   text eol=lf
+*.props    text eol=lf
+*.targets  text eol=lf
+*.json     text eol=lf
+*.xml      text eol=lf
+*.config   text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.md       text eol=lf
+*.sh       text eol=lf
+*.razor    text eol=lf
+*.cshtml   text eol=lf
+
+# Visual Studio solution files must be CRLF for some tools to parse them
+*.sln      text eol=crlf
+
+# Windows batch files must be CRLF or cmd.exe chokes
+*.bat      text eol=crlf
+*.cmd      text eol=crlf
+
+# PowerShell prefers CRLF on Windows
+*.ps1      text eol=crlf
+
+# Binary files — never diff or convert
+*.dll      binary
+*.exe      binary
+*.pdb      binary
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.pfx      binary
+*.snk      binary
+*.zip      binary
+*.tar.gz   binary
